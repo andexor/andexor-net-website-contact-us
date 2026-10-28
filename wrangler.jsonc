@@ -1,0 +1,29 @@
+{
+  "name": "andexor-net-website-contact-us",
+  "main": "src/worker.py",
+  "compatibility_date": "2026-10-28",
+  "compatibility_flags": [
+    "python_workers",
+    "python_dedicated_snapshot"
+  ],
+  "vars": {
+    "ALLOWED_ORIGINS": "https://andexor.net,http://localhost:3000,http://localhost:8787"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    {
+      "pattern": "andexor.net/api/contact*",
+      "zone_name": "andexor.net"
+    }
+  ],
+  "workers_dev": false,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "andexor-net-website-contact-us",
+      "database_id": "f3723475-58bc-493b-a937-a040b4e40e29"
+    }
+  ]
+}
