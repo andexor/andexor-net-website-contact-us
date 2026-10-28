@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Andexor Network, Inc.
+# Author: Ed Jenkins <ed@andexor.net>
+
+[project]
+name = "andexor-net-website-contact-us"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["fastapi<0.142", "python-multipart"]
+
+[dependency-groups]
+dev = ["workers-py", "workers-runtime-sdk"]
+
+[tool.uv]
+exclude-newer = "1 week"

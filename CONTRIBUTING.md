@@ -1,7 +1,7 @@
 <!--
 SPDX-License-Identifier: Apache-2.0
 Copyright 2026 Andexor Network, Inc.
-Author: Ed Jenkins<ed@andexor.net>
+Author: Ed Jenkins <ed@andexor.net>
 -->
 
 # How To Contribute
@@ -71,7 +71,7 @@ The following overview describes the general procedures for how to contribute to
 1. Clone the repository.
 1. Install build tools and project dependencies. See [setup.md](./setup.md) to get started.
 1. Create an issue, or ask for one to be created for you. It should read like a user story. It should contain a Description heading and an Acceptance Criteria heading. It may also have a Technical Details heading if necessary. Explain what the feature or fix is and what it is supposed to do and why it should be done. Make a note of the issue number. You will need to reference it in your git commit message.
-1. Create a new branch.
+1. Create a new branch. One branch per issue is a suggestion, not a requirement; small related changes may share a branch.
 1. If you are adding or updating a feature, update the specification first, if there is one.
 1. Add or update architecture documentation as needed, including
    - use case diagrams
@@ -120,6 +120,11 @@ Depending on what language the code is written in, it may provide a linter and i
 ### Formatting
 
 Depending on what language the code is written in, it may provide a formatter and instructions on how to use it.
+
+For this site, Prettier formats all TypeScript, TSX, JavaScript, and CSS with 4 spaces per indent level, no tabs, and
+lines under 120 characters as a guideline, not a rule. Run `bun run format` to format files and `bun run format:check`
+to check them; no test fails on line length or on Prettier's output. The built site is formatted too, so reviewers can
+read the HTML, CSS, and the site's own script file. See "Formatting" in `CLAUDE.md` for how that works.
 
 ## Documentation Guidelines
 

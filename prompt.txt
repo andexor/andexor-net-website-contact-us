@@ -1,0 +1,24 @@
+
+Let's design and build a back-end web service with Python and FastAPI.
+Ask me questions until you have enough info to write a minimalistic Product Requirements Document (PRD).
+Save the PRD as a markdown file in this repo.
+Once that is written and you and I both approve it, let's give it to Haiku for implementation.
+The goal is to accept form submissions from the Contact Us form from any page where the "Contact Us" Call To Action (CTA) button appears on the Andexor Network website at https://andexor.net/ and insert this data into a table in a database.
+The service should be deployed as a Cloudflare Worker.
+The data should be stored in a Cloudflare D1 database.
+Add the Cloudflare MCP server to this project and use it, the wrangler, and cf commands as needed.
+Make sure you are logged in to my Cloudflare account and everything is working by using some simple read-only command that only works when logged in.
+Open the Andexor Network website.
+Accept all cookies if prompted.
+Hit the Contact Us button to open the dialog.
+Observe the fields on the form, noting their name and datatype.
+Design a data model from that.
+Create a Python script that will create a database and a table if they do not exist.
+Create a web service to accept the form submission and store the data in the table.
+No data validation at this time.
+Return an HTTP 200 response.
+Create another Python script I can use to periodically query the table manually as needed for testing and let it return all rows and print them together as a JSON document.
+Do not write any unit tests or functional tests at this time.
+I want to design, build, and deploy as fast as possible.
+Let me know if there is anything else you need.
+Add CORS headers to support other origins for testing: http://localhost:3000 and http://localhost:8787.

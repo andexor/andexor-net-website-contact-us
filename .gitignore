@@ -11,3 +11,23 @@ wheels/
 
 # MacOS
 .DS_Store
+
+# Claude Code
+.claude/
+
+# Agent skills
+.agents/
+
+# Wrangler
+.wrangler/
+.dev.vars*
+
+# Node (installed by wrangler tooling)
+node_modules/
+
+# pywrangler (workers-py) generated environments
+.venv-workers/
+python_modules/
+
+# cf CLI account cache
+.cloudflare/

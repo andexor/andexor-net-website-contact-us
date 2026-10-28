@@ -1,7 +1,7 @@
 <!--
 SPDX-License-Identifier: Apache-2.0
 Copyright 2026 Andexor Network, Inc.
-Author: Ed Jenkins<ed@andexor.net>
+Author: Ed Jenkins <ed@andexor.net>
 -->
 
 # Install Pre-requisites
@@ -130,13 +130,3 @@ After rebooting, run this to verify that it is working:
 If you want to run RabbitMQ for local testing,
 
 > Run `install-rabbitmq-server.sh`
-
-## Spec Kit
-
-Spec Kit is used to manage feature requirements and development.
-
-If you have not installed uv yet, install it first.
-
-> Run `install-uv.sh`
-
-> Run `install-spec-kit.sh`
