@@ -100,10 +100,10 @@ persistent D1 database named `andexor-net-website-contact-us-preview`, so test s
 touch production data. Set it up and remove it with scripts, not by hand:
 
 ```sh
-./create-preview-env.sh                        # create the preview database, apply schema.sql, write the previews block
-./create-preview-env.sh --enable-preview-urls  # one time only: give previews a workers.dev address
-./delete-preview-env.sh                        # decommission: delete previews, the preview database, and the config block
-./delete-preview-env.sh --preview NAME         # delete one preview only (use this for previews deployed by hand)
+./preview-create.sh                        # create the preview database, apply schema.sql, write the previews block
+./preview-create.sh --enable-preview-urls  # one time only: give previews a workers.dev address
+./preview-delete.sh                        # decommission: delete previews, the preview database, and the config block
+./preview-delete.sh --preview NAME         # delete one preview only (use this for previews deployed by hand)
 ```
 
 Both scripts are safe to run again, read their names from `wrangler.jsonc`, and never touch the
