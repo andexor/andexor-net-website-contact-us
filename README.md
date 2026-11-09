@@ -92,3 +92,30 @@ uv run scripts/query_db.py
 - `src/worker.py`: FastAPI app and the Worker entrypoint.
 - `scripts/create_db.py`: create the database and table, record `database_id`.
 - `scripts/query_db.py`: print all rows as one JSON array.
+
+## Preview environment (pull requests)
+
+Each pull request branch gets its own Cloudflare Worker Preview. All previews share one
+persistent D1 database named `andexor-net-website-contact-us-preview`, so test submissions never
+touch production data. Set it up and remove it with scripts, not by hand:
+
+```sh
+./create-preview-env.sh                        # create the preview database, apply schema.sql, write the previews block
+./create-preview-env.sh --enable-preview-urls  # one time only: give previews a workers.dev address
+./delete-preview-env.sh                        # decommission: delete previews, the preview database, and the config block
+./delete-preview-env.sh --preview NAME         # delete one preview only (use this for previews deployed by hand)
+```
+
+Both scripts are safe to run again, read their names from `wrangler.jsonc`, and never touch the
+production Worker, route, or database. Commit `wrangler.jsonc` after running the create script.
+
+CI builds previews with `uv run pywrangler preview`. To deploy one by hand:
+
+```sh
+uv run pywrangler preview --name my-test
+```
+
+A preview is served at `https://<preview-name>-andexor-net-website-contact-us.andexor.workers.dev`.
+Previews are public. Cloudflare adds `X-Robots-Tag: noindex` to workers.dev preview URLs, so
+search engines are told not to index them. The production route `andexor.net/api/contact*` is
+not affected.
