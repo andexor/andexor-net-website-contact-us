@@ -61,9 +61,7 @@ jobs:
           echo "Preview: ${BASE}"
 
           # Liveness only. A new preview can take a few seconds to answer.
-          curl --silent --show-error --fail --retry 10 --retry-delay 3 --retry-all-errors \
-            "${BASE}/api/contact/health"
-          echo
+          .github/scripts/check-health.sh "${BASE}/api/contact/health" 10 3
 
           # A real API call that writes a row to the preview database. The production
           # deploy job never does this. A 500 here is final, so it is not retried.
@@ -104,4 +102,4 @@ jobs:
         run: uv run pywrangler deploy
 
       - name: Production health check
-        run: curl --silent --show-error --fail --retry 5 --retry-delay 3 --retry-all-errors https://andexor.net/api/contact/health
+        run: .github/scripts/check-health.sh https://andexor.net/api/contact/health 10 3
