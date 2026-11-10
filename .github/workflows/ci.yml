@@ -60,16 +60,28 @@ jobs:
           BASE="https://${PREVIEW_NAME}-${WORKER}.${WORKERS_SUBDOMAIN}.workers.dev"
           echo "Preview: ${BASE}"
 
-          # A new preview can take a few seconds to answer.
+          # Liveness only. A new preview can take a few seconds to answer.
           curl --silent --show-error --fail --retry 10 --retry-delay 3 --retry-all-errors \
             "${BASE}/api/contact/health"
           echo
 
+          # A real API call that writes a row to the preview database. The production
+          # deploy job never does this. A 500 here is final, so it is not retried.
+          # The cause of a failure is in the service logs, not in the response.
           RND=$(printf '%05d' $((RANDOM * 3 % 100000)))
-          curl --silent --show-error --fail -X POST "${BASE}/api/contact" \
-            -H 'Content-Type: application/json' \
-            -d "{\"name\":\"CI ${RND}\",\"email\":\"ci-${RND}@example.com\",\"phone\":\"+1-555-01${RND:0:2}\",\"website\":\"https://ci-${RND}.example.com\",\"help\":\"CI run ${GITHUB_RUN_ID}\",\"sourcePath\":\"/ci/${RND}\"}"
+          BODY=$(jq -n --arg r "${RND}" --arg run "${GITHUB_RUN_ID}" '{
+            name: ("CI " + $r), email: ("ci-" + $r + "@example.com"),
+            phone: ("+1-555-01" + $r[0:2]), website: ("https://ci-" + $r + ".example.com"),
+            help: ("CI run " + $run), sourcePath: ("/ci/" + $r)}')
+          STATUS=$(curl --silent --show-error --output response.json --write-out '%{http_code}' \
+            -X POST "${BASE}/api/contact" -H 'Content-Type: application/json' -d "${BODY}")
+          echo "POST /api/contact returned ${STATUS}"
+          cat response.json
           echo
+          if [[ "${STATUS}" != 2* ]] || ! jq -e '.ok == true' response.json > /dev/null; then
+            echo "::error::POST /api/contact failed with ${STATUS}. See the service logs for the cause."
+            exit 1
+          fi
 
   deploy:
     name: Deploy to production
