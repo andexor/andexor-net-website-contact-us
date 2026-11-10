@@ -34,7 +34,12 @@ def _allowed_origins(request):
 
 @app.middleware("http")
 async def cors(request: Request, call_next):
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        # Details go to the service logs only. The caller always gets a JSON 500.
+        print(f"unhandled error on {request.method} {request.url.path}: {type(exc).__name__}: {exc}")
+        response = JSONResponse({"ok": False}, status_code=500)
     allowed = _allowed_origins(request)
     origin = request.headers.get("origin")
     response.headers["Access-Control-Allow-Origin"] = origin if origin in allowed else allowed[0]

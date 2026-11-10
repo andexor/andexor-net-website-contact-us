@@ -2,8 +2,8 @@
 # Copyright 2026 Andexor Network, Inc.
 # Author: Ed Jenkins <ed@andexor.net>
 
-# Pull requests: deploy a real preview and smoke test it.
-# Push to main: deploy a preview and smoke test it, and only if that passes, deploy to production.
+# Pull requests: deploy to the shared preview and smoke test it.
+# Push to main: deploy to the shared preview and smoke test it, and only if that passes, deploy to production.
 #
 # Needs two repository secrets: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
 # Turn off Workers Builds for this repository, or every push is built and deployed twice.
@@ -28,11 +28,16 @@ env:
   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
   # Account workers.dev subdomain. Preview URLs are <name>-<worker>.<subdomain>.workers.dev
   WORKERS_SUBDOMAIN: andexor
+  # Every run deploys to this one preview, so previews never pile up. Runs take turns.
+  PREVIEW_NAME: preview
 
 jobs:
   preview:
     name: Preview and smoke test
     runs-on: ubuntu-latest
+    concurrency:
+      group: preview-environment
+      cancel-in-progress: false
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7.0.1
@@ -47,14 +52,7 @@ jobs:
         run: uv sync
 
       - name: Deploy preview
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            NAME="pr-${{ github.event.number }}"
-          else
-            NAME="main-${GITHUB_SHA::7}"
-          fi
-          echo "PREVIEW_NAME=${NAME}" >> "${GITHUB_ENV}"
-          uv run pywrangler preview --name "${NAME}"
+        run: uv run pywrangler preview --name "${PREVIEW_NAME}"
 
       - name: Smoke test preview
         run: |
@@ -62,16 +60,28 @@ jobs:
           BASE="https://${PREVIEW_NAME}-${WORKER}.${WORKERS_SUBDOMAIN}.workers.dev"
           echo "Preview: ${BASE}"
 
-          # A new preview can take a few seconds to answer.
+          # Liveness only. A new preview can take a few seconds to answer.
           curl --silent --show-error --fail --retry 10 --retry-delay 3 --retry-all-errors \
             "${BASE}/api/contact/health"
           echo
 
+          # A real API call that writes a row to the preview database. The production
+          # deploy job never does this. A 500 here is final, so it is not retried.
+          # The cause of a failure is in the service logs, not in the response.
           RND=$(printf '%05d' $((RANDOM * 3 % 100000)))
-          curl --silent --show-error --fail -X POST "${BASE}/api/contact" \
-            -H 'Content-Type: application/json' \
-            -d "{\"name\":\"CI ${RND}\",\"email\":\"ci-${RND}@example.com\",\"phone\":\"+1-555-01${RND:0:2}\",\"website\":\"https://ci-${RND}.example.com\",\"help\":\"CI run ${GITHUB_RUN_ID}\",\"sourcePath\":\"/ci/${RND}\"}"
+          BODY=$(jq -n --arg r "${RND}" --arg run "${GITHUB_RUN_ID}" '{
+            name: ("CI " + $r), email: ("ci-" + $r + "@example.com"),
+            phone: ("+1-555-01" + $r[0:2]), website: ("https://ci-" + $r + ".example.com"),
+            help: ("CI run " + $run), sourcePath: ("/ci/" + $r)}')
+          STATUS=$(curl --silent --show-error --output response.json --write-out '%{http_code}' \
+            -X POST "${BASE}/api/contact" -H 'Content-Type: application/json' -d "${BODY}")
+          echo "POST /api/contact returned ${STATUS}"
+          cat response.json
           echo
+          if [[ "${STATUS}" != 2* ]] || ! jq -e '.ok == true' response.json > /dev/null; then
+            echo "::error::POST /api/contact failed with ${STATUS}. See the service logs for the cause."
+            exit 1
+          fi
 
   deploy:
     name: Deploy to production
