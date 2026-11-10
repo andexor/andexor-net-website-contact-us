@@ -12,13 +12,13 @@
 #      so a preview never touches production data, plus "preview_urls": true.
 #
 # Safe to run again: every step checks what already exists. Undo it with
-# delete-preview-env.sh.
+# preview-delete.sh.
 #
 # Preview URLs are a setting of the production Worker, so the script only checks it and
 # reports. Pass --enable-preview-urls to apply it. That runs "wrangler triggers deploy",
 # which re-applies the Worker's routes and URL settings and uploads no code.
 #
-# Usage: ./create-preview-env.sh [--enable-preview-urls]
+# Usage: ./preview-create.sh [--enable-preview-urls]
 #
 # Requires: cf (logged in), jq, uv (only for --enable-preview-urls).
 # wrangler.jsonc must be plain JSON, with no comments.
@@ -131,7 +131,7 @@ if [[ "${URLS_ON}" == true ]]; then
     echo "  preview URLs: enabled"
 else
     echo "  preview URLs: OFF, so previews deploy but have no address."
-    echo "  Turn them on once with: ./create-preview-env.sh --enable-preview-urls"
+    echo "  Turn them on once with: ./preview-create.sh --enable-preview-urls"
 fi
 echo "Commit ${WRANGLER_FILE}. Previews deploy with: uv run pywrangler preview"
-echo "Remove everything with: ./delete-preview-env.sh"
+echo "Remove everything with: ./preview-delete.sh"

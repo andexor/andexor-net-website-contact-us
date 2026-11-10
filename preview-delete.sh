@@ -4,7 +4,7 @@
 # Copyright 2026 Andexor Network, Inc.
 # Author: Ed Jenkins <ed@andexor.net>
 
-# Decommissions the pull request preview environment made by create-preview-env.sh:
+# Decommissions the pull request preview environment made by preview-create.sh:
 #
 #   1. Deletes every Worker Preview of this Worker.
 #   2. Deletes the preview D1 database, including all of its data.
@@ -17,7 +17,7 @@
 # ones Workers Builds knows about (the pull request previews built by CI). A preview you
 # deployed by hand with "pywrangler preview --name X" is deleted with: --preview X
 #
-# Usage: ./delete-preview-env.sh [--yes] [--preview NAME ...]
+# Usage: ./preview-delete.sh [--yes] [--preview NAME ...]
 #
 #   --yes           Do not ask for confirmation.
 #   --preview NAME  Delete only the named Preview(s) and stop. The database and the
