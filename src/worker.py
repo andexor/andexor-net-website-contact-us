@@ -84,7 +84,7 @@ async def create_contact(request: Request):
     }
     columns = ", ".join(row)
     placeholders = ", ".join("?" for _ in row)
-    sql = f"INSERT INTO contact_usx ({columns}) VALUES ({placeholders})"
+    sql = f"INSERT INTO contact_us ({columns}) VALUES ({placeholders})"
 
     try:
         result = await _env(request).DB.prepare(sql).bind(*row.values()).run()
