@@ -8,7 +8,7 @@ Author: Ed Jenkins <ed@andexor.net>
 
 Thank you for helping keep Andexor Network, Inc. and its ecosystem secure. This policy covers the source code in this
 repository. For a security problem with the live website at https://andexor.net/, with an email address at
-andexor.net, or with a service Andexor hosts, use the company's [Security Policy](https://andexor.net/security)
+andexor.net, or with a service Andexor hosts, use the company's [Security Policy](https://andexor.net/company/security-policy)
 instead. It states the scope, the response times, the coordinated disclosure window, and the safe harbor for
 good-faith research. Reports about the code are welcome through either channel.
 
@@ -97,7 +97,7 @@ reporting is enabled on this repository and should be enabled on every repositor
 
 We acknowledge reports within 3 business days and aim to fix a confirmed issue within 90 days. Please give us that
 time before you discuss the issue publicly. Research that follows this policy and the website's
-[Security Policy](https://andexor.net/security) is covered by the safe harbor described there.
+[Security Policy](https://andexor.net/company/security-policy) is covered by the safe harbor described there.
 
 ### Reporting Guidelines
 
