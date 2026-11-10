@@ -2,8 +2,8 @@
 # Copyright 2026 Andexor Network, Inc.
 # Author: Ed Jenkins <ed@andexor.net>
 
-# Pull requests: deploy a real preview and smoke test it.
-# Push to main: deploy a preview and smoke test it, and only if that passes, deploy to production.
+# Pull requests: deploy to the shared preview and smoke test it.
+# Push to main: deploy to the shared preview and smoke test it, and only if that passes, deploy to production.
 #
 # Needs two repository secrets: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
 # Turn off Workers Builds for this repository, or every push is built and deployed twice.
@@ -28,11 +28,16 @@ env:
   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
   # Account workers.dev subdomain. Preview URLs are <name>-<worker>.<subdomain>.workers.dev
   WORKERS_SUBDOMAIN: andexor
+  # Every run deploys to this one preview, so previews never pile up. Runs take turns.
+  PREVIEW_NAME: preview
 
 jobs:
   preview:
     name: Preview and smoke test
     runs-on: ubuntu-latest
+    concurrency:
+      group: preview-environment
+      cancel-in-progress: false
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7.0.1
@@ -47,14 +52,7 @@ jobs:
         run: uv sync
 
       - name: Deploy preview
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            NAME="pr-${{ github.event.number }}"
-          else
-            NAME="main-${GITHUB_SHA::7}"
-          fi
-          echo "PREVIEW_NAME=${NAME}" >> "${GITHUB_ENV}"
-          uv run pywrangler preview --name "${NAME}"
+        run: uv run pywrangler preview --name "${PREVIEW_NAME}"
 
       - name: Smoke test preview
         run: |
