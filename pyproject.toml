@@ -6,7 +6,7 @@
 name = "andexor-net-website-contact-us"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = ["fastapi<0.142", "python-multipart"]
+dependencies = ["fastapi<0.163", "python-multipart"]
 
 [dependency-groups]
 dev = ["workers-py", "workers-runtime-sdk"]
