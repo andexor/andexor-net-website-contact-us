@@ -1,0 +1,97 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Andexor Network, Inc.
+# Author: Ed Jenkins <ed@andexor.net>
+
+# Pull requests: deploy a real preview and smoke test it.
+# Push to main: deploy a preview and smoke test it, and only if that passes, deploy to production.
+#
+# Needs two repository secrets: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+# Turn off Workers Builds for this repository, or every push is built and deployed twice.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  # Account workers.dev subdomain. Preview URLs are <name>-<worker>.<subdomain>.workers.dev
+  WORKERS_SUBDOMAIN: andexor
+
+jobs:
+  preview:
+    name: Preview and smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 22
+
+      - uses: astral-sh/setup-uv@v10.3.3
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Deploy preview
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            NAME="pr-${{ github.event.number }}"
+          else
+            NAME="main-${GITHUB_SHA::7}"
+          fi
+          echo "PREVIEW_NAME=${NAME}" >> "${GITHUB_ENV}"
+          uv run pywrangler preview --name "${NAME}"
+
+      - name: Smoke test preview
+        run: |
+          WORKER=$(jq -r '.name' wrangler.jsonc)
+          BASE="https://${PREVIEW_NAME}-${WORKER}.${WORKERS_SUBDOMAIN}.workers.dev"
+          echo "Preview: ${BASE}"
+
+          # A new preview can take a few seconds to answer.
+          curl --silent --show-error --fail --retry 10 --retry-delay 3 --retry-all-errors \
+            "${BASE}/api/contact/health"
+          echo
+
+          RND=$(printf '%05d' $((RANDOM * 3 % 100000)))
+          curl --silent --show-error --fail -X POST "${BASE}/api/contact" \
+            -H 'Content-Type: application/json' \
+            -d "{\"name\":\"CI ${RND}\",\"email\":\"ci-${RND}@example.com\",\"phone\":\"+1-555-01${RND:0:2}\",\"website\":\"https://ci-${RND}.example.com\",\"help\":\"CI run ${GITHUB_RUN_ID}\",\"sourcePath\":\"/ci/${RND}\"}"
+          echo
+
+  deploy:
+    name: Deploy to production
+    needs: preview
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 22
+
+      - uses: astral-sh/setup-uv@v10.3.3
+
+      - run: uv sync
+
+      - name: Deploy
+        run: uv run pywrangler deploy
+
+      - name: Production health check
+        run: curl --silent --show-error --fail --retry 5 --retry-delay 3 --retry-all-errors https://andexor.net/api/contact/health
