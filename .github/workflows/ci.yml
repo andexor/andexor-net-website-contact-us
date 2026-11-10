@@ -54,10 +54,6 @@ jobs:
       - name: Deploy preview
         run: uv run pywrangler preview --name "${PREVIEW_NAME}"
 
-      - name: TEMP probe production from the runner
-        continue-on-error: true
-        run: .github/scripts/check-health.sh https://andexor.net/api/contact/health 8 2
-
       - name: Smoke test preview
         run: |
           WORKER=$(jq -r '.name' wrangler.jsonc)
