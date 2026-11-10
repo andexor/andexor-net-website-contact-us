@@ -115,7 +115,7 @@ CI builds previews with `uv run pywrangler preview`. To deploy one by hand:
 uv run pywrangler preview --name my-test
 ```
 
-A preview is served at `https://<preview-name>-andexor-net-website-contact-us.andexor.workers.dev`.
+CI always deploys to one preview named `preview`, so previews do not pile up and runs take turns. It is served at `https://preview-andexor-net-website-contact-us.andexor.workers.dev`.
 Previews are public. Cloudflare adds `X-Robots-Tag: noindex` to workers.dev preview URLs, so
 search engines are told not to index them. The production route `andexor.net/api/contact*` is
 not affected.
