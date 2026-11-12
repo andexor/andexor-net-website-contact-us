@@ -1,7 +1,3 @@
-# Andexor Base Template
-
-This project is the skeleton of all other projects created by Andexor Network, Inc, providing starter files necessary for licensing, attribution, etc.
-
 # Contact Us submission service
 
 A Python FastAPI Worker on Cloudflare that accepts submissions from the Contact Us dialog on
