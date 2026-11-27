@@ -37,13 +37,15 @@ def _allowed_origins(request):
 def _lead(row_id, fields):
     """The lead Carmen gets for a stored row: whatever the form gave, with the empty fields left out.
     Which leads are taken is Carmen's decision, not ours."""
-    clean = {key: (fields[key] or "").strip() for key in ("name", "email", "phone", "website", "help")}
+    clean = {key: (fields[key] or "").strip() for key in ("name", "email", "phone", "website", "help", "sourcePath")}
     lead = {
         "source": "CONTACT_US",
         "source_ref": str(row_id),
         "website": clean["website"],
         "note": clean["help"],
         "contact": {key: clean[key] for key in ("name", "email", "phone") if clean[key]},
+        # The page the form was sent from. Not source_ref: Carmen matches on that, and would merge strangers.
+        "facts": [{"key": "contact_us_path", "value": clean["sourcePath"]}] if clean["sourcePath"] else [],
     }
     # No top-level "name": that is the company's name, and the form's name is the person's.
     return {key: value for key, value in lead.items() if value}

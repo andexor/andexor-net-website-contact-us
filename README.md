@@ -25,6 +25,7 @@ reference. Production binds `andexor-carmen-api`. The `previews` block binds
 `andexor-carmen-api-preview`, which is a Worker of its own, so a preview never writes to
 production Carmen and production never writes to the preview.
 
+- The form's `sourcePath` is sent as a fact with the key `contact_us_path`.
 - Every submission is sent, with whatever fields the form gave. Carmen decides which leads it
   takes. Today it refuses a lead with no website, no name, and no email, and a lead whose contact
   has only a phone.
