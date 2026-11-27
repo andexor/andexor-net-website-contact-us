@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
+from js import Object
+from pyodide.ffi import to_js
 from workers import WorkerEntrypoint
 
 FORM_KEYS = ("name", "email", "phone", "website", "help", "sourcePath")
@@ -30,6 +32,42 @@ def _allowed_origins(request):
     """Comma-separated ALLOWED_ORIGINS var, as a list with the first entry as default."""
     raw = getattr(_env(request), "ALLOWED_ORIGINS", None) or DEFAULT_ORIGINS
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
+def _lead(row_id, fields):
+    """The lead Carmen gets for a stored row, or None when Carmen would refuse it."""
+    clean = {key: (fields[key] or "").strip() for key in ("name", "email", "phone", "website", "help")}
+    if not (clean["website"] or clean["name"] or clean["email"]):
+        return None
+    lead = {
+        "source": "CONTACT_US",
+        "source_ref": str(row_id),
+        "website": clean["website"],
+        "note": clean["help"],
+    }
+    # Carmen refuses a contact with neither a name nor an email, so a phone alone is not sent.
+    if clean["name"] or clean["email"]:
+        lead["contact"] = {key: clean[key] for key in ("name", "email", "phone") if clean[key]}
+    # No top-level "name": that is the company's name, and the form's name is the person's.
+    return {key: value for key, value in lead.items() if value}
+
+
+async def _send_lead(env, row_id, fields):
+    """Tell Carmen about the row. Never raises: the form must not fail because of Carmen."""
+    try:
+        lead = _lead(row_id, fields)
+        if lead is None:
+            print(f"carmen lead skipped for row {row_id}: no website, name, or email")
+            return
+        # The argument must arrive as a plain JavaScript object, not a Map.
+        result = await env.CARMEN.create_lead(to_js(lead, dict_converter=Object.fromEntries))
+        if result.ok:
+            print(f"carmen lead ok for row {row_id}: company_id={result.company_id} created={result.created}")
+        else:
+            print(f"carmen lead refused for row {row_id}: {result.error}: {result.message}")
+    except Exception as exc:
+        # The type only: the text of an error could repeat the person's details.
+        print(f"carmen lead failed for row {row_id}: {type(exc).__name__}")
 
 
 @app.middleware("http")
@@ -97,6 +135,8 @@ async def create_contact(request: Request):
     except Exception as exc:
         print(f"contact insert failed: {exc}")
         return JSONResponse({"ok": False}, status_code=500)
+
+    await _send_lead(_env(request), row_id, fields)
 
     return {"ok": True, "id": row_id}
 

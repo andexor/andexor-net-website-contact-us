@@ -42,6 +42,12 @@
             "database_id": "f3723475-58bc-493b-a937-a040b4e40e29"
         }
     ],
+    "services": [
+        {
+            "binding": "CARMEN",
+            "service": "andexor-carmen-api"
+        }
+    ],
     "preview_urls": true,
     "previews": {
         "vars": {
@@ -52,6 +58,12 @@
                 "binding": "DB",
                 "database_name": "andexor-net-website-contact-us-preview",
                 "database_id": "dd67f9a6-65e5-4f25-ba80-6819a29880f5"
+            }
+        ],
+        "services": [
+            {
+                "binding": "CARMEN",
+                "service": "andexor-carmen-api-preview"
             }
         ]
     }
