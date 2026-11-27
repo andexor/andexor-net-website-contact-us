@@ -35,19 +35,16 @@ def _allowed_origins(request):
 
 
 def _lead(row_id, fields):
-    """The lead Carmen gets for a stored row, or None when Carmen would refuse it."""
+    """The lead Carmen gets for a stored row: whatever the form gave, with the empty fields left out.
+    Which leads are taken is Carmen's decision, not ours."""
     clean = {key: (fields[key] or "").strip() for key in ("name", "email", "phone", "website", "help")}
-    if not (clean["website"] or clean["name"] or clean["email"]):
-        return None
     lead = {
         "source": "CONTACT_US",
         "source_ref": str(row_id),
         "website": clean["website"],
         "note": clean["help"],
+        "contact": {key: clean[key] for key in ("name", "email", "phone") if clean[key]},
     }
-    # Carmen refuses a contact with neither a name nor an email, so a phone alone is not sent.
-    if clean["name"] or clean["email"]:
-        lead["contact"] = {key: clean[key] for key in ("name", "email", "phone") if clean[key]}
     # No top-level "name": that is the company's name, and the form's name is the person's.
     return {key: value for key, value in lead.items() if value}
 
@@ -56,9 +53,6 @@ async def _send_lead(env, row_id, fields):
     """Tell Carmen about the row. Never raises: the form must not fail because of Carmen."""
     try:
         lead = _lead(row_id, fields)
-        if lead is None:
-            print(f"carmen lead skipped for row {row_id}: no website, name, or email")
-            return
         # The argument must arrive as a plain JavaScript object, not a Map.
         result = await env.CARMEN.create_lead(to_js(lead, dict_converter=Object.fromEntries))
         if result.ok:

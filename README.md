@@ -25,10 +25,12 @@ reference. Production binds `andexor-carmen-api`. The `previews` block binds
 `andexor-carmen-api-preview`, which is a Worker of its own, so a preview never writes to
 production Carmen and production never writes to the preview.
 
-- A submission with no website, no name, and no email is not sent.
+- Every submission is sent, with whatever fields the form gave. Carmen decides which leads it
+  takes. Today it refuses a lead with no website, no name, and no email, and a lead whose contact
+  has only a phone.
 - The form never fails because of Carmen. The answer stays `{"ok": true, "id": ...}` once the row
   is stored.
-- The outcome is in the Worker log as `carmen lead ok`, `refused`, `failed`, or `skipped`, with
+- The outcome is in the Worker log as `carmen lead ok`, `refused`, or `failed`, with
   the row id and without the person's details.
 - There is no retry. A lead that Carmen did not take is only in the log and in the table.
 
