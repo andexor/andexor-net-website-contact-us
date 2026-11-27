@@ -2,11 +2,13 @@
 # Copyright 2026 Andexor Network, Inc.
 # Author: Ed Jenkins <ed@andexor.net>
 
+import importlib
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
+from typing import Any, cast
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
-from js import Object
 from pyodide.ffi import to_js
 from workers import WorkerEntrypoint
 
@@ -16,11 +18,16 @@ DEFAULT_ORIGINS = "https://andexor.net"
 app = FastAPI()
 
 
-def _env(request):
+def _runtime_module(name: str) -> Any:
+    """A module of the Workers runtime ("js", "asgi"). It exists only inside a Worker, so it has no types."""
+    return importlib.import_module(name)
+
+
+def _env(request: Request) -> Any:
     return request.scope["env"]
 
 
-def _text(value):
+def _text(value: object) -> str | None:
     if isinstance(value, str):
         return value
     if isinstance(value, (bool, int, float)):
@@ -28,17 +35,17 @@ def _text(value):
     return None
 
 
-def _allowed_origins(request):
+def _allowed_origins(request: Request) -> list[str]:
     """Comma-separated ALLOWED_ORIGINS var, as a list with the first entry as default."""
-    raw = getattr(_env(request), "ALLOWED_ORIGINS", None) or DEFAULT_ORIGINS
+    raw: str = getattr(_env(request), "ALLOWED_ORIGINS", None) or DEFAULT_ORIGINS
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
-def _lead(row_id, fields):
+def _lead(row_id: int, fields: dict[str, str | None]) -> dict[str, Any]:
     """The lead Carmen gets for a stored row: whatever the form gave, with the empty fields left out.
     Which leads are taken is Carmen's decision, not ours."""
     clean = {key: (fields[key] or "").strip() for key in ("name", "email", "phone", "website", "help", "sourcePath")}
-    lead = {
+    lead: dict[str, Any] = {
         "source": "CONTACT_US",
         "source_ref": str(row_id),
         "website": clean["website"],
@@ -51,12 +58,13 @@ def _lead(row_id, fields):
     return {key: value for key, value in lead.items() if value}
 
 
-async def _send_lead(env, row_id, fields):
+async def _send_lead(env: Any, row_id: int, fields: dict[str, str | None]) -> None:
     """Tell Carmen about the row. Never raises: the form must not fail because of Carmen."""
     try:
         lead = _lead(row_id, fields)
         # The argument must arrive as a plain JavaScript object, not a Map.
-        result = await env.CARMEN.create_lead(to_js(lead, dict_converter=Object.fromEntries))
+        from_entries: Any = _runtime_module("js").Object.fromEntries
+        result: Any = await env.CARMEN.create_lead(to_js(lead, dict_converter=from_entries))
         if result.ok:
             print(f"carmen lead ok for row {row_id}: company_id={result.company_id} created={result.created}")
         else:
@@ -67,7 +75,7 @@ async def _send_lead(env, row_id, fields):
 
 
 @app.middleware("http")
-async def cors(request: Request, call_next):
+async def cors(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     try:
         response = await call_next(request)
     except Exception as exc:
@@ -84,30 +92,29 @@ async def cors(request: Request, call_next):
 
 
 @app.options("/api/contact")
-async def contact_preflight():
+async def contact_preflight() -> Response:
     return Response(status_code=204)
 
 
 @app.get("/api/contact/health")
-async def health():
+async def health() -> dict[str, bool]:
     return {"ok": True}
 
 
 @app.post("/api/contact")
-async def create_contact(request: Request):
+async def create_contact(request: Request) -> JSONResponse:
     content_type = request.headers.get("content-type", "")
+    body: dict[str, Any]
     if content_type.startswith("application/json"):
-        body = await request.json()
-        if not isinstance(body, dict):
-            body = {}
+        parsed: Any = await request.json()
+        body = cast(dict[str, Any], parsed) if isinstance(parsed, dict) else {}
     else:
-        form = await request.form()
-        body = dict(form)
+        body = dict(await request.form())
 
     fields = {key: _text(body.get(key)) for key in FORM_KEYS}
     headers = request.headers
 
-    row = {
+    row: dict[str, str | None] = {
         "name": fields["name"],
         "email": fields["email"],
         "phone": fields["phone"],
@@ -126,7 +133,7 @@ async def create_contact(request: Request):
     sql = f"INSERT INTO contact_us ({columns}) VALUES ({placeholders})"
 
     try:
-        result = await _env(request).DB.prepare(sql).bind(*row.values()).run()
+        result: Any = await _env(request).DB.prepare(sql).bind(*row.values()).run()
         row_id = int(result.meta.last_row_id)
     except Exception as exc:
         print(f"contact insert failed: {exc}")
@@ -134,11 +141,10 @@ async def create_contact(request: Request):
 
     await _send_lead(_env(request), row_id, fields)
 
-    return {"ok": True, "id": row_id}
+    return JSONResponse({"ok": True, "id": row_id})
 
 
 class Default(WorkerEntrypoint):
-    async def fetch(self, request):
-        import asgi
-
-        return await asgi.fetch(app, request.js_object, self.env)
+    async def fetch(self, request: Any) -> Any:
+        env: Any = cast(Any, self).env  # the runtime's base class gives env no type
+        return await _runtime_module("asgi").fetch(app, request.js_object, env)
