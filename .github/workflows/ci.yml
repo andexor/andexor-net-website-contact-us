@@ -51,6 +51,9 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      - name: Type check
+        run: ./type-check.sh
+
       - name: Deploy preview
         run: uv run pywrangler preview --name "${PREVIEW_NAME}"
 

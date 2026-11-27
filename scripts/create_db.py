@@ -10,6 +10,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 WRANGLER_FILE = ROOT / "wrangler.jsonc"
@@ -17,7 +18,7 @@ SCHEMA_FILE = ROOT / "schema.sql"
 DB_NAME = "andexor-net-website-contact-us"
 
 
-def run_cf(*args):
+def run_cf(*args: str) -> Any:
     """Run a cf command and return its parsed JSON stdout."""
     cmd = ["cf", *args]
     proc = subprocess.run(cmd, capture_output=True, text=True)
@@ -32,7 +33,7 @@ def run_cf(*args):
         sys.exit(f"command did not print JSON: {' '.join(cmd)}\n{proc.stdout}")
 
 
-def find_database():
+def find_database() -> Any:
     """Return the database record whose name matches DB_NAME, or None."""
     databases = run_cf("d1", "list", "--name", DB_NAME)
     for db in databases:
@@ -41,7 +42,7 @@ def find_database():
     return None
 
 
-def schema_statements():
+def schema_statements() -> list[str]:
     """Split schema.sql into single statements, dropping -- comment lines."""
     lines = [
         line
@@ -52,10 +53,10 @@ def schema_statements():
     return [part.strip() for part in parts if part.strip()]
 
 
-def write_database_id(database_id):
+def write_database_id(database_id: str) -> bool:
     """Set the DB binding's database_id in wrangler.jsonc. Returns True if changed."""
-    config = json.loads(WRANGLER_FILE.read_text())
-    bindings = [b for b in config.get("d1_databases", []) if b.get("binding") == "DB"]
+    config: Any = json.loads(WRANGLER_FILE.read_text())
+    bindings: list[Any] = [b for b in config.get("d1_databases", []) if b.get("binding") == "DB"]
     if not bindings:
         sys.exit("wrangler.jsonc has no d1_databases binding named DB")
     if bindings[0].get("database_id") == database_id:
@@ -65,7 +66,7 @@ def write_database_id(database_id):
     return True
 
 
-def main():
+def main() -> None:
     db = find_database()
     if db is None:
         print(f"database {DB_NAME} not found, creating it")
@@ -74,7 +75,7 @@ def main():
     else:
         print(f"database {DB_NAME} already exists")
 
-    database_id = db["uuid"]
+    database_id: str = db["uuid"]
 
     statements = schema_statements()
     for statement in statements:

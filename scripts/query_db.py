@@ -10,32 +10,33 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 WRANGLER_FILE = ROOT / "wrangler.jsonc"
 SQL = "SELECT * FROM contact_us ORDER BY id"
 
 
-def database_id():
-    config = json.loads(WRANGLER_FILE.read_text())
-    bindings = [b for b in config.get("d1_databases", []) if b.get("binding") == "DB"]
+def database_id() -> str:
+    config: Any = json.loads(WRANGLER_FILE.read_text())
+    bindings: list[Any] = [b for b in config.get("d1_databases", []) if b.get("binding") == "DB"]
     if not bindings or not bindings[0].get("database_id"):
         sys.exit("wrangler.jsonc has no database_id for the DB binding; run create_db.py first")
     return bindings[0]["database_id"]
 
 
-def rows_from_output(stdout):
+def rows_from_output(stdout: str) -> list[Any]:
     """cf d1 query prints a list with one entry per statement, each with a results list."""
-    payload = json.loads(stdout)
+    payload: Any = json.loads(stdout)
     if isinstance(payload, dict):
         payload = [payload]
-    rows = []
+    rows: list[Any] = []
     for statement in payload:
         rows.extend(statement.get("results", []))
     return rows
 
 
-def main():
+def main() -> None:
     cmd = ["cf", "d1", "query", database_id(), "--sql", SQL]
     proc = subprocess.run(cmd, capture_output=True, text=True)
     if proc.returncode != 0:

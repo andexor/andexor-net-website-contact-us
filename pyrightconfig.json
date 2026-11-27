@@ -1,0 +1,6 @@
+{
+    "include": ["src", "scripts"],
+    "venvPath": ".",
+    "venv": ".venv",
+    "typeCheckingMode": "strict"
+}

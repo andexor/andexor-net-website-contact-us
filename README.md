@@ -104,6 +104,11 @@ uv run scripts/query_db.py
 - `wrangler.jsonc`: Worker name, entry point, route, `ALLOWED_ORIGINS` var, D1 binding, `CARMEN` Service Binding.
 - `schema.sql`: `contact_us` table DDL.
 - `src/worker.py`: FastAPI app and the Worker entrypoint.
+- `pyrightconfig.json`: strict type checking, for Pylance and for `type-check.sh`.
+- `type-check.sh`: strict type check with Pyright, as Pylance uses. The pipeline runs it before
+  the preview is deployed. All code must pass it: annotate every parameter and return value, and
+  type JavaScript objects from the Workers runtime `Any`.
+- `specs/`: one spec for each change of a requirement or a behavior.
 - `scripts/create_db.py`: create the database and table, record `database_id`.
 - `scripts/query_db.py`: print all rows as one JSON array.
 
