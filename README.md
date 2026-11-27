@@ -17,6 +17,24 @@ CORS: the `Access-Control-Allow-Origin` header echoes the request's `Origin` whe
 in the `ALLOWED_ORIGINS` var in `wrangler.jsonc` (comma-separated). It currently allows
 `https://andexor.net`, `http://localhost:3000`, and `http://localhost:8787` for local testing.
 
+## Leads in Andexor Carmen
+
+After a submission's row is stored, the Worker calls `create_lead` on Andexor Carmen over a
+Service Binding named `CARMEN`, with the source `CONTACT_US` and the row id as the source
+reference. Production binds `andexor-carmen-api`. The `previews` block binds
+`andexor-carmen-api-preview`, which is a Worker of its own, so a preview never writes to
+production Carmen and production never writes to the preview.
+
+- The form's `sourcePath` is sent as a fact with the key `contact_us_path`.
+- Every submission is sent, with whatever fields the form gave. Carmen decides which leads it
+  takes. Today it refuses a lead with no website, no name, and no email, and a lead whose contact
+  has only a phone.
+- The form never fails because of Carmen. The answer stays `{"ok": true, "id": ...}` once the row
+  is stored.
+- The outcome is in the Worker log as `carmen lead ok`, `refused`, or `failed`, with
+  the row id and without the person's details.
+- There is no retry. A lead that Carmen did not take is only in the log and in the table.
+
 ## Prerequisites
 
 - `uv` for Python packages (`install-uv.sh`).
@@ -83,7 +101,7 @@ uv run scripts/query_db.py
 
 - `pyproject.toml`: uv project, FastAPI and python-multipart dependencies, workers-py dev tools.
 - `uv.lock`: locked dependency versions. Keep it in the repo.
-- `wrangler.jsonc`: Worker name, entry point, route, `ALLOWED_ORIGINS` var, D1 binding.
+- `wrangler.jsonc`: Worker name, entry point, route, `ALLOWED_ORIGINS` var, D1 binding, `CARMEN` Service Binding.
 - `schema.sql`: `contact_us` table DDL.
 - `src/worker.py`: FastAPI app and the Worker entrypoint.
 - `scripts/create_db.py`: create the database and table, record `database_id`.
